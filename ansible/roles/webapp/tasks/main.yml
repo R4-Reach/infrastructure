@@ -1,0 +1,134 @@
+- name: Create webapp group
+  become: true
+  ansible.builtin.group:
+    name: webapp
+    state: present
+
+- name: Create webapp user
+  become: true
+  ansible.builtin.user:
+    name: webapp
+    group: webapp
+    groups: docker
+    append: true
+    state: present
+    system: true
+    create_home: false
+
+- name: Create webapp working directory
+  become: true
+  ansible.builtin.file:
+    state: directory
+    mode: "0755"
+    owner: webapp
+    group: webapp
+    path: "{{ webapp_working_directory }}"
+
+- name: Ensure rsyslog is installed (routes container logs to /var/log/docker)
+  become: true
+  ansible.builtin.apt:
+    name: rsyslog
+    state: present
+
+- name: Create /var/log/docker directory (served by nginx at /logs/)
+  become: true
+  ansible.builtin.file:
+    state: directory
+    path: /var/log/docker
+    mode: "0755"
+    owner: root
+    group: root
+
+- name: Deploy rsyslog rule routing docker/* logs to /var/log/docker
+  become: true
+  notify: Restart_rsyslog
+  ansible.builtin.copy:
+    src: rsyslog-docker.conf
+    dest: /etc/rsyslog.d/30-docker.conf
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Deploy logrotate config for /var/log/docker
+  become: true
+  ansible.builtin.copy:
+    src: logrotate-docker
+    dest: /etc/logrotate.d/docker
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Deploy database init SQL
+  become: true
+  notify: Reload_webapp
+  ansible.builtin.template:
+    src: 01-init.sql.j2
+    dest: "{{ webapp_working_directory }}/01-init.sql"
+    mode: "0644"
+    owner: webapp
+    group: webapp
+
+- name: Deploy docker-compose.yml
+  become: true
+  notify: Reload_webapp
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ webapp_working_directory }}/docker-compose.yml"
+    mode: "0644"
+    owner: webapp
+    group: webapp
+
+- name: Deploy webapp systemd service
+  become: true
+  notify: Reload_webapp
+  ansible.builtin.template:
+    src: webapp.service.j2
+    dest: /etc/systemd/system/webapp.service
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Daemon-reload, enable and start the webapp service
+  become: true
+  ansible.builtin.systemd_service:
+    daemon_reload: true
+    name: webapp.service
+    enabled: true
+    state: started
+
+- name: Ensure the app DB user's password matches the configured value
+  become: true
+  become_user: webapp
+  ansible.builtin.command:
+    cmd: >
+      docker compose exec -T database
+      psql -v ON_ERROR_STOP=1 -U postgres -d postgres
+      -c "ALTER USER {{ webapp_database_user }} WITH PASSWORD '{{ webapp_database_password }}'"
+    chdir: "{{ webapp_working_directory }}"
+  register: webapp_alter_db_password
+  changed_when: false
+  retries: 10
+  delay: 3
+  until: webapp_alter_db_password.rc == 0
+  no_log: true
+
+- name: Configure user for CICD deployments - user named 'deploy'
+  block:
+    - name: Deploy deploy-webapp.sh
+      become: true
+      ansible.builtin.template:
+        src: deploy-webapp.sh.j2
+        dest: "{{ webapp_working_directory }}/deploy-webapp.sh"
+        owner: webapp
+        group: webapp
+        mode: "0755"
+
+    - name: Deploy sudoers entry for deploy user - /etc/sudoers.d/deploy-webapp
+      become: true
+      ansible.builtin.template:
+        src: deploy-sudoers.j2
+        dest: /etc/sudoers.d/deploy-webapp
+        owner: root
+        group: root
+        mode: "0440"
+        validate: /usr/sbin/visudo -cf %s

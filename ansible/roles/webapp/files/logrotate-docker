@@ -1,0 +1,18 @@
+# Managed by Ansible - do not edit manually
+# Rotate the per-container Docker log files written by rsyslog (see
+# rsyslog-docker.conf). Mirrors roles/system/logging_config for consistency.
+/var/log/docker/*.log
+{
+	rotate 30
+	daily
+	maxsize 250M
+	missingok
+	notifempty
+	nocreate
+	compress
+	delaycompress
+	sharedscripts
+	postrotate
+		/usr/lib/rsyslog/rsyslog-rotate
+	endscript
+}

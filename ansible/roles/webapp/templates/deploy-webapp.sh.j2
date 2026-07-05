@@ -1,0 +1,20 @@
+#!/bin/bash
+# Managed by Ansible - do not edit manually
+# This script is triggered by the CICD 'deploy' user. Pulls the latest
+# app images and recreates only flyway + webapp. The database service is left
+# running; compose will not recreate it unless its config changed.
+set -eu
+
+cd "{{ webapp_working_directory }}"
+docker compose pull flyway webapp
+docker compose up -d flyway webapp
+
+# Reclaim disk after each deploy so old artifacts don't accumulate:
+#  - stopped containers (e.g. the exited flyway one-shot, or containers a
+#    recreate replaced)
+#  - dangling images (the previous :latest, left untagged once the new image
+#    is pulled and the container recreated onto it)
+# Both prunes only touch stopped / unreferenced objects. Running containers,
+# their in-use images, and named volumes (pgdata) are never affected.
+docker container prune -f
+docker image prune -f

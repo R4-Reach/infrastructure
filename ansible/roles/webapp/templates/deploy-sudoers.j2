@@ -1,0 +1,6 @@
+# Managed by Ansible - do not edit manually
+# Allow the CICD 'deploy' user to run the deploy script as the 'webapp' user
+# (which owns the compose project and is in the docker group). Nothing else.
+Cmnd_Alias DEPLOY_WEBAPP = {{ webapp_working_directory }}/deploy-webapp.sh
+
+deploy    ALL=(webapp)    NOPASSWD: DEPLOY_WEBAPP

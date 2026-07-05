@@ -1,0 +1,87 @@
+# Managed by Ansible - do not edit manually
+services:
+  database:
+    image: postgres:16.6
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_DB=postgres
+      - POSTGRES_HOST_AUTH_METHOD=trust
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./01-init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 3s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+    logging:
+      driver: journald
+      options:
+        tag: "{% raw %}docker/{{.Name}}{% endraw %}"
+
+  flyway:
+    image: ghcr.io/r4-reach/wnc-supply-sites/flyway:latest
+    # Migrate as the app user so every object is owned by {{ webapp_database_user }}
+    # by default (no per-object "alter ... owner to" needed). Connection details
+    # are passed via FLYWAY_* env vars rather than on the command line so the
+    # password does not show up in `docker inspect` / the process list.
+    environment:
+      - FLYWAY_URL=jdbc:postgresql://database:5432/{{ webapp_database_name }}
+      - FLYWAY_USER={{ webapp_database_user }}
+      - FLYWAY_PASSWORD={{ webapp_database_password }}
+    command: >
+      -locations=filesystem:/flyway/sql
+      -connectRetries=60
+      -baselineOnMigrate=true
+      -validateMigrationNaming=true
+      repair migrate
+    depends_on:
+      database:
+        condition: service_healthy
+    logging:
+      driver: journald
+      options:
+        tag: "{% raw %}docker/{{.Name}}{% endraw %}"
+
+  webapp:
+    image: ghcr.io/r4-reach/wnc-supply-sites/webapp:latest
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      flyway:
+        condition: service_completed_successfully
+    environment:
+      - DB_URL=database:5432
+      - DB_NAME={{ webapp_database_name }}
+      - DB_USER={{ webapp_database_user }}
+      - DB_PASS={{ webapp_database_password }}
+      - AUTH_USER=xxx
+      - AUTH_PASS=xxxxxx
+      - MAKE_ENABLED=false
+      - WEBHOOK_SECRET=xxxxxxxx
+      - MAKE_WEBHOOK_UPSERT_SITE=https://hook.us2.make.com/xxxx
+      - MAKE_WEBHOOK_NEW_ITEM=https://hooks.airtable.com/workflows/v1/genericWebhook/xxxxx
+      - MAKE_WEBHOOK_UPDATE_INVENTORY=https://hooks.airtable.com/workflows/v1/genericWebhook/xxxx
+      - MAKE_WEBHOOK_DISPATCH=https://hook.us2.make.com/xxxx
+      - MAKE_WEBHOOK_ADD_TO_DELIVERY=https://hooks.airtable.com/workflows/v1/genericWebhook/xxx
+      - AIRTABLE_DELIVERY_UPDATE_WEBHOOK=https://hooks.airtable.com/workflows/v1/genericWebhook/xxxx
+      - AIRTABLE_DRIVER_UPDATE_WEBHOOK=https://hooks.airtable.com/workflows/v1/genericWebhook/xxxx
+      - AIRTABLE_WEBHOOK_ITEM_MERGE_URL=https://hooks.airtable.com/workflows/v1/genericWebhook/xxxx
+      - AIRTABLE_DELIVERY_VOLUNTEER_WEBHOOK=https://hooks.airtable.com/workflows/v1/genericWebhook/xxxx
+      - ENABLE_DISTANCE_CALCULATOR=false
+      - GOOGLE_API_KEY=xxx
+      - TWILIO_FROM_NUMBER=+11111111111
+      - TWILIO_ACCOUNT_SID=xxxx
+      - TWILIO_AUTH_TOKEN=xxxx
+      - TWILIO_SMS_ENABLED=false
+      - WEBSITE_URI=https://wnc-supply-sites.com
+      - ALLOW_UNIVERSAL_LOGIN=false
+    restart: always
+    logging:
+      driver: journald
+      options:
+        tag: "{% raw %}docker/{{.Name}}{% endraw %}"
+
+volumes:
+  pgdata:

@@ -1,0 +1,8 @@
+-- Managed by Ansible - do not edit manually
+-- Runs once, on first initialization of the Postgres data volume
+-- (docker-entrypoint-initdb.d). Creates the application database and the
+-- app user the webapp connects as. Flyway then migrates this database while
+-- connected as that same app user, so migrated objects are owned by it.
+create database {{ webapp_database_name }};
+create user {{ webapp_database_user }} with password '{{ webapp_database_password }}';
+alter database {{ webapp_database_name }} owner to {{ webapp_database_user }};
