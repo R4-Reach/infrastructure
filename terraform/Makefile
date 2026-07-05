@@ -23,10 +23,10 @@ init:
 validate: init
 	$(TF) validate
 
-plan diff:
+plan diff: init
 	$(TF) plan -input=false -lock=false
 
-apply:
+apply: init
 	$(TF) apply -input=false
 
 apply-now:
