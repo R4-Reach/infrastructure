@@ -15,8 +15,8 @@ deps:
 setup: deps ## Prints commands to install ansible (linux)
 	@printf '\n\033[1;34m━━ Install Ansible ━━\033[0m\n'
 	uv tool install --force ansible-core --with ansible --with linode_api4
-	command -v ansible-lint >/dev/null 2>&1 || uv tool install ansible-lint --with linode_api4
-	ansible-galaxy collection install -r requirements.yml
+	command -v ansible-lint >/dev/null 2>&1 || uv tool install ansible-lint
+	ansible-galaxy collection install --force -r requirements.yml
 
 check: setup ## Syntax-check and lint the playbook
 	@printf '\n\033[1;34m━━ Run Syntax Check ━━\033[0m\n'
