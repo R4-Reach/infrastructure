@@ -9,7 +9,7 @@
     mode: '0644'
 - name: Add apt repo listing
   become: true
-  tags: apt
+  register: docker_apt_repo
   ansible.builtin.copy:
     src: docker.list
     dest: /etc/apt/sources.list.d/docker.list
@@ -18,12 +18,11 @@
     mode: '0644'
 - name: Apt update
   become: true
-  tags: apt
+  when: docker_apt_repo.changed
   ansible.builtin.apt:
     update_cache: true
 - name: Install docker packages
   become: true
-  tags: apt
   ansible.builtin.apt:
     update_cache: false
     name:

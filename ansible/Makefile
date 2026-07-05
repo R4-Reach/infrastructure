@@ -13,6 +13,7 @@ deps:
 	test -n "$${R4_LINODE_TOKEN}"
 
 setup: deps ## Prints commands to install ansible (linux)
+	@printf '\n\033[1;34m━━ Install Ansible ━━\033[0m\n'
 	uv tool install --force ansible-core --with ansible --with linode_api4
 	command -v ansible-lint >/dev/null 2>&1 || uv tool install ansible-lint
 	ansible-galaxy collection install -r requirements.yml
@@ -34,7 +35,9 @@ runAnsible=ANSIBLE_CONFIG="./ansible.cfg" \
 	  -e ansible_user=$(SSH_USER)
 
 plan diff: setup ## Runs ansible diff to show what would change without applying
+	@printf '\n\033[1;34m━━ Run Ansible (Diff Mode) ━━\033[0m\n'
 	$(runAnsible) --check --diff --inventory inventory/linode.yml playbook.yml
 
 apply deploy: setup ## Runs ansible playbook, configures and updates servers
+	@printf '\n\033[1;34m━━ Run Ansible (Apply Mode) ━━\033[0m\n'
 	$(runAnsible) --inventory inventory/linode.yml playbook.yml
