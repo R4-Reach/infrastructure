@@ -77,6 +77,15 @@ services:
       - TWILIO_SMS_ENABLED=false
       - WEBSITE_URI=https://wnc-supply-sites.com
       - ALLOW_UNIVERSAL_LOGIN=false
+    healthcheck:
+      # Spring Boot + Hikari fail-fast means Tomcat only binds 8080 once the datasource
+      # is up, so "listening on 8080" is a true readiness signal. Uses bash's /dev/tcp
+      # (the zulu image has bash but no curl/nc/wget), so no extra dependencies.
+      test: ["CMD", "bash", "-c", "</dev/tcp/localhost/8080"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 60s
     restart: always
     logging:
       driver: journald

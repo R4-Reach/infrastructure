@@ -7,7 +7,32 @@ set -eu
 
 cd "{{ webapp_working_directory }}"
 docker compose pull flyway webapp
-docker compose up -d flyway webapp
+# --force-recreate reconciles the app onto the current network even when its config
+# hash is unchanged. Plain `up -d` only acts on config differences, so a container
+# left in a bad *runtime* state (e.g. orphaned from the compose network after a
+# docker daemon restart) is silently left as-is and the deploy "succeeds" over a
+# down app. Only flyway + webapp are targeted, so the database is never bounced.
+docker compose up -d --force-recreate flyway webapp
+
+# Health gate: fail the deploy (red CI job) if the app doesn't come up healthy,
+# instead of green-lighting an outage. Relies on the webapp healthcheck in the
+# compose file.
+echo "Waiting for webapp to become healthy..."
+cid="$(docker compose ps -q webapp)"
+deadline=$(( SECONDS + 180 ))
+while true; do
+  status="$(docker inspect -f '{% raw %}{{.State.Health.Status}}{% endraw %}' "$cid" 2>/dev/null || echo missing)"
+  if [ "$status" = "healthy" ]; then
+    echo "webapp is healthy"
+    break
+  fi
+  if [ "$status" = "unhealthy" ] || [ "$SECONDS" -ge "$deadline" ]; then
+    echo "ERROR: webapp did not become healthy (last status: $status). Recent logs:"
+    docker compose logs --tail=50 webapp
+    exit 1
+  fi
+  sleep 5
+done
 
 # Reclaim disk after each deploy so old artifacts don't accumulate:
 #  - stopped containers (e.g. the exited flyway one-shot, or containers a
