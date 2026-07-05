@@ -27,9 +27,3 @@
       - docker-compose-plugin
   environment:
     DEBIAN_FRONTEND: noninteractive
-- name: Create docker group, add users to this group to allow them to run docker
-    without sudo
-  become: true
-  ansible.builtin.group:
-    name: docker
-    state: present

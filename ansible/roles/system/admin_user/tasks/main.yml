@@ -5,13 +5,6 @@
     name: '{{ item }}'
     state: present
   with_items: [admin, docker]
-- name: Create admin user groups
-  become: true
-  ansible.builtin.group:
-    name: '{{ item.name }}'
-  with_items: '{{ admin_user_accounts }}'
-  loop_control:
-    label: '{{ item.name }}'
 - name: Create admin user accounts
   become: true
   ansible.builtin.user:
@@ -47,11 +40,6 @@
 # Deploy service account - limited to docker pull and service restarts only
 - name: Create user for deployment named 'deploy'
   block:
-    - name: Deploy user - create group
-      become: true
-      ansible.builtin.group:
-        name: '{{ admin_user_deploy_account.name }}'
-        state: present
     - name: Deploy user - create account
       become: true
       ansible.builtin.user:
@@ -68,14 +56,6 @@
         owner: root
         group: root
         mode: '0440'
-    - name: Deploy user - SSH directory
-      become: true
-      ansible.builtin.file:
-        path: /home/{{ admin_user_deploy_account.name }}/.ssh/
-        state: directory
-        mode: '700'
-        owner: '{{ admin_user_deploy_account.name }}'
-        group: '{{ admin_user_deploy_account.name }}'
     - name: Deploy user - authorized_keys
       become: true
       ansible.posix.authorized_key:
