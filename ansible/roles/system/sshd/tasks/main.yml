@@ -1,0 +1,19 @@
+---
+# Harden the SSH daemon. Root must never be reachable over SSH; the only path to
+# root is the Linode Lish/Glish console (see the admin_user role, which sets the
+# root password for that purpose).
+#
+# Delivered as a drop-in under /etc/ssh/sshd_config.d/ (included by the stock
+# Debian/Ubuntu sshd_config). The 00- prefix sorts it ahead of cloud-init's
+# 50-cloud-init.conf; sshd uses the first value seen for each keyword, so this
+# guarantees PermitRootLogin no wins.
+- name: Deploy sshd hardening drop-in
+  notify: Reload_sshd
+  become: true
+  ansible.builtin.copy:
+    src: 00-hardening.conf
+    dest: /etc/ssh/sshd_config.d/00-hardening.conf
+    mode: '0644'
+    owner: root
+    group: root
+    validate: /usr/sbin/sshd -t -f %s

@@ -1,0 +1,4 @@
+---
+- name: Reboot_system
+  become: true
+  ansible.builtin.reboot:

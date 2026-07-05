@@ -1,0 +1,8 @@
+---
+collections:
+  # Provides the dynamic Linode inventory plugin used in inventory/linode.yml
+  - name: community.general
+    version: 13.1.0
+  # Provides the authorized_key module used in roles/system/admin_user
+  - name: ansible.posix
+    version: 2.2.0

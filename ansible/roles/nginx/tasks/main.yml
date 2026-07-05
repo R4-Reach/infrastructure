@@ -1,0 +1,31 @@
+---
+- name: Apt install nginx
+  become: true
+  ansible.builtin.apt:
+    name: nginx
+    state: present
+- name: Deploy /etc/nginx/sites-enabled/default default nginx sites_enabled config
+  become: true
+  notify:
+    - Validate_nginx
+    - Reload_nginx
+  ansible.builtin.template:
+    src: sites-enabled-default.conf
+    dest: /etc/nginx/sites-enabled/default
+    owner: root
+    group: root
+    mode: '0644'
+- name: Ensure nginx is started
+  become: true
+  ansible.builtin.systemd:
+    name: nginx
+    state: started
+    enabled: true
+
+- name: Allow firewall ports
+  become: true
+  community.general.ufw:
+    rule: allow
+    port: '{{ item }}'
+    proto: tcp
+  loop: ['80', '443']

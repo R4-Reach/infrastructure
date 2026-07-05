@@ -1,0 +1,37 @@
+---
+- name: UFW deny incoming by default
+  become: true
+  retries: 12
+  delay: 5
+  register: firewall_result
+  until: firewall_result is not failed
+  community.general.ufw:
+    default: deny
+    direction: incoming
+- name: UFW allow outgoing by default
+  become: true
+  retries: 12
+  delay: 5
+  register: firewall_result
+  until: firewall_result is not failed
+  community.general.ufw:
+    default: allow
+    direction: outgoing
+- name: Turn on ssh rate limiting
+  become: true
+  retries: 12
+  delay: 5
+  register: firewall_result
+  until: firewall_result is not failed
+  community.general.ufw:
+    rule: limit
+    port: ssh
+    proto: tcp
+- name: Turn on firewall
+  become: true
+  retries: 12
+  delay: 5
+  register: firewall_result
+  until: firewall_result is not failed
+  community.general.ufw:
+    state: enabled

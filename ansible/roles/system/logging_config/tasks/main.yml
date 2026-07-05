@@ -1,0 +1,14 @@
+---
+- name: Run logrotate hourly instead of daily
+  become: true
+  ansible.builtin.command:
+    cmd: mv /etc/cron.daily/logrotate /etc/cron.hourly/logrotate
+    creates: /etc/cron.hourly/logrotate
+- name: Deploy config file /etc/logrotate.d/rsyslog
+  become: true
+  ansible.builtin.template:
+    src: logrotate.d_rsyslog
+    dest: /etc/logrotate.d/rsyslog
+    owner: root
+    group: root
+    mode: '0644'

@@ -1,0 +1,6 @@
+---
+- name: Restart_journald
+  become: true
+  ansible.builtin.service:
+    state: restarted
+    name: systemd-journald

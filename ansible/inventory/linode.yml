@@ -1,0 +1,18 @@
+---
+# Dynamic inventory plugin for Linode.
+plugin: community.general.linode
+access_token: "{{ lookup('env', 'R4_LINODE_TOKEN') }}"
+# Servers need to have any of these tags to be included in the inventory
+tags:
+  - server
+# compose exposes variables to ansible from dynamic values
+compose:
+  # Connect over the public IP. We explicitly exclude the 192.168.x private
+  # range
+  ansible_host: ipv4 | reject('match', '^192\.168\.') | first
+  hostname: label
+# keyed_groups creates an Ansible host group for each Linode tag.
+# EG: a server tagged "server" becomes a member of the inventory group "server".
+keyed_groups:
+  - key: tags
+    separator: ''

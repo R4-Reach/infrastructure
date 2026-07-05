@@ -1,0 +1,25 @@
+---
+- name: Common system setup
+  hosts: all
+  tags: system
+  environment:
+    DEBIAN_FRONTEND: noninteractive
+    NEEDRESTART_MODE: a
+  roles:
+    - role: admin_user
+      tags: admin_user
+    - role: apt_packages
+      tags: apt
+    - docker
+    - firewall
+    - sshd
+    - journald
+    - logging_config
+    # because hostname role may reboot the system, it is executed last. On reboot, any major package updates
+    # will take effect & the system will be in a clean/ready state for further host-specific deployments.
+    - hostname
+- name: Server setup to deploy application
+  hosts: server
+  tags: server
+  roles:
+    - {role: nginx, tags: nginx}

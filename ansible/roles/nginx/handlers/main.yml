@@ -1,0 +1,14 @@
+---
+# Ordered deliberately: handlers run in definition order, not notify order.
+# Validate must precede reload so a bad config fails the play *before* nginx
+# reloads — the running process keeps serving its last-good in-memory config.
+- name: Validate_nginx
+  become: true
+  ansible.builtin.command: nginx -t
+  changed_when: false
+
+- name: Reload_nginx
+  become: true
+  ansible.builtin.service:
+    name: nginx
+    state: reloaded

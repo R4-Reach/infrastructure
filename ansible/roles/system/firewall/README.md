@@ -1,0 +1,1 @@
+Enables and configures UFW (fire wall).

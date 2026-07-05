@@ -1,0 +1,21 @@
+---
+- name: Update and upgrade apt packages
+  become: true
+  check_mode: false
+  changed_when: false
+  ansible.builtin.apt:
+    upgrade: true
+    update_cache: true
+    cache_valid_time: 86400  # One day, only updates if caches are older than this.
+    autoremove: true
+- name: Apt install standard utilities and packages
+  become: true
+  ansible.builtin.apt:
+    state: present
+    name:
+      - fail2ban
+      - htop
+      - iftop
+      - net-tools
+      - unattended-upgrades
+      - unzip

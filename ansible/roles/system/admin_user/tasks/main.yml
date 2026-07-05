@@ -1,0 +1,92 @@
+---
+- name: Ensure admin user group & docker user group exist
+  become: true
+  ansible.builtin.group:
+    name: '{{ item }}'
+    state: present
+  with_items: [admin, docker]
+- name: Create admin user groups
+  become: true
+  ansible.builtin.group:
+    name: '{{ item.name }}'
+  with_items: '{{ admin_user_accounts }}'
+  loop_control:
+    label: '{{ item.name }}'
+- name: Create admin user accounts
+  become: true
+  ansible.builtin.user:
+    name: '{{ item.name }}'
+    shell: /bin/bash
+    create_home: true
+    append: true
+    groups: '{{ item.name }},admin,docker'
+  with_items: '{{ admin_user_accounts }}'
+  loop_control:
+    label: '{{ item.name }}'
+- name: Deployer sudo permissions file - /etc/sudoers.d/[admin-user]
+  become: true
+  ansible.builtin.template:
+    src: sudoer_file.sudo
+    dest: /etc/sudoers.d/{{ item.name }}
+    owner: root
+    group: root
+    mode: '0440'
+  with_items: '{{ admin_user_accounts }}'
+  loop_control:
+    label: '{{ item.name }}'
+- name: SSH keys - add authorized keys for admin users
+  become: true
+  ansible.posix.authorized_key:
+    user: '{{ item.0.name }}'
+    key: '{{ item.1 }}'
+    state: present
+  loop: "{{ admin_user_accounts | subelements('ssh_keys') }}"
+  loop_control:
+    label: '{{ item.0.name }}'
+
+# Deploy service account - limited to docker pull and service restarts only
+- name: Create user for deployment named 'deploy'
+  block:
+    - name: Deploy user - create group
+      become: true
+      ansible.builtin.group:
+        name: '{{ admin_user_deploy_account.name }}'
+        state: present
+    - name: Deploy user - create account
+      become: true
+      ansible.builtin.user:
+        name: '{{ admin_user_deploy_account.name }}'
+        shell: /bin/bash
+        create_home: true
+        groups: '{{ admin_user_deploy_account.name }}'
+        append: true
+    - name: Deploy user - sudoers file
+      become: true
+      ansible.builtin.template:
+        src: deploy_sudoer_file.sudo
+        dest: /etc/sudoers.d/{{ admin_user_deploy_account.name }}
+        owner: root
+        group: root
+        mode: '0440'
+    - name: Deploy user - SSH directory
+      become: true
+      ansible.builtin.file:
+        path: /home/{{ admin_user_deploy_account.name }}/.ssh/
+        state: directory
+        mode: '700'
+        owner: '{{ admin_user_deploy_account.name }}'
+        group: '{{ admin_user_deploy_account.name }}'
+    - name: Deploy user - authorized_keys
+      become: true
+      ansible.posix.authorized_key:
+        user: '{{ admin_user_deploy_account.name }}'
+        state: present
+        key: '{{ admin_user_deploy_account.ssh_key }}'
+
+# Set password on root so we can log in via the Linode Lish/Glish
+# console if we ever lose SSH access (e.g. firewall or sshd misconfig).
+- name: Set root password for (Lish/Glish console access)
+  become: true
+  ansible.builtin.user:
+    name: root
+    password: '{{ admin_user_root_password_hash }}'

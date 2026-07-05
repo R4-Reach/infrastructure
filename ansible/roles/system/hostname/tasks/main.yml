@@ -1,0 +1,19 @@
+---
+- name: Assert hostname var is defined, we expect this variable to be defined in
+    inventory file
+  ansible.builtin.assert:
+    that: [hostname is defined and hostname != ""]
+- name: Deploy /etc/hosts file with hostname in it
+  become: true
+  ansible.builtin.template:
+    src: etc_hosts.j2
+    dest: /etc/hosts
+    mode: '0755'
+    owner: root
+    group: root
+- name: Set hostname of system
+  become: true
+  notify: Reboot_system
+  ansible.builtin.hostname:
+    name: '{{ hostname }}'
+    use: debian
