@@ -13,7 +13,7 @@ deps:
 	test -n "$${R4_LINODE_TOKEN}"
 
 setup: deps ## Prints commands to install ansible (linux)
-	command -v ansible >/dev/null 2>&1 || uv tool install ansible-core --with ansible --with linode_api4
+	uv tool install --force ansible-core --with ansible --with linode_api4
 	command -v ansible-lint >/dev/null 2>&1 || uv tool install ansible-lint
 	ansible-galaxy collection install -r requirements.yml
 
