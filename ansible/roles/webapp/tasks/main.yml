@@ -119,8 +119,9 @@
   become: true
   when: webapp_database_container.stdout | trim | length > 0
   ansible.builtin.command:
-    cmd: docker compose exec -T database psql -v ON_ERROR_STOP=1 -U postgres -d postgres
-    stdin: "ALTER USER {{ webapp_database_user }} WITH PASSWORD '{{ webapp_database_password }}'"
+    cmd: docker compose exec -T database psql -v ON_ERROR_STOP=1 -U postgres -d
+      postgres
+    stdin: ALTER USER {{ webapp_database_user }} WITH PASSWORD '{{ webapp_database_password }}'
     chdir: '{{ webapp_working_directory }}'
   register: webapp_alter_db_password
   changed_when: false
