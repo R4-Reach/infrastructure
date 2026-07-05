@@ -1,0 +1,8 @@
+[
+  {
+    "name": "ansible",
+    "ssh_keys": [
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHwnoWpr6gVMKXbuV7F0MfvN/bsd1fV9cdNIKL+gaTVc ansible@r4reach"
+    ]
+  }
+]
