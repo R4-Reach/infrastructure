@@ -96,20 +96,37 @@
     name: webapp.service
     enabled: true
     state: started
+# Read-only probe for the skip condition below. check_mode: false so the
+# condition also has data during --check (diff) runs.
+- name: Check whether the database container is running
+  become: true
+  check_mode: false
+  ansible.builtin.command:
+    cmd: docker compose ps -q --status=running database
+    chdir: '{{ webapp_working_directory }}'
+  register: webapp_database_container
+  changed_when: false
+  failed_when: false
+
+# Reconciles the app user's password with the vaulted value so rotation works
+# via IaC: it runs before the Reload_webapp handler, so flyway/webapp are
+# recreated with the new password only after the database already has it.
+# Skipped when the database container is down (e.g. mid-maintenance): a fresh
+# volume gets the current password from 01-init.sql at first boot, and an
+# existing volume is reconciled by the next apply with the stack up.
+# The SQL goes via stdin so the password never appears in the process list.
 - name: Ensure the app DB user's password matches the configured value
   become: true
+  when: webapp_database_container.stdout | trim | length > 0
   ansible.builtin.command:
-    cmd: >
-      docker compose exec -T database
-      psql -v ON_ERROR_STOP=1 -U postgres -d postgres
-      -c "ALTER USER {{ webapp_database_user }} WITH PASSWORD '{{ webapp_database_password }}'"
+    cmd: docker compose exec -T database psql -v ON_ERROR_STOP=1 -U postgres -d postgres
+    stdin: "ALTER USER {{ webapp_database_user }} WITH PASSWORD '{{ webapp_database_password }}'"
     chdir: '{{ webapp_working_directory }}'
   register: webapp_alter_db_password
   changed_when: false
   retries: 10
   delay: 3
   until: webapp_alter_db_password.rc == 0
-  no_log: true
 - name: Configure user for CICD deployments - user named 'deploy'
   block:
     - name: Deploy deploy-webapp.sh
