@@ -6,7 +6,6 @@
 # bouncing Postgres and causing a much larger outage.
 - name: Reload_webapp
   become: true
-  become_user: webapp
   ansible.builtin.command:
     cmd: docker compose up -d
     chdir: '{{ webapp_working_directory }}'

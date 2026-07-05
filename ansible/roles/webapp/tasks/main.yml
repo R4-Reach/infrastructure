@@ -88,7 +88,6 @@
     state: started
 - name: Ensure the app DB user's password matches the configured value
   become: true
-  become_user: webapp
   ansible.builtin.command:
     cmd: >
       docker compose exec -T database
