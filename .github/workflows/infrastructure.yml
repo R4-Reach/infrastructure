@@ -49,13 +49,13 @@ jobs:
       - name: Setup path for ansible
         run: |
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - name: Add uv tool bin to PATH
+        run: echo "$HOME/.local/bin" >> "$GITHUB_PATH"
       - name: Ansible Diff (non-main dispatch)
         if: github.ref != 'refs/heads/main'
         run: |
-          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
           make diff SSH_USER=ansible
       - name: Ansible Apply
         if: github.ref == 'refs/heads/main'
         run: |
-          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
           make apply SSH_USER=ansible 
