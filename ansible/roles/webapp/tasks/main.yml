@@ -14,16 +14,17 @@
     state: present
     system: true
     create_home: false
-# 0750: the rendered files inside contain database passwords, and 01-init.sql
+# 2750: the rendered files inside contain database passwords, and 01-init.sql
 # must itself stay world-readable (see its task below) — so the directory is
-# what keeps other host users out.
+# what keeps other host users out. Group 'admin' so admins can browse without
+# sudo; setgid bit so files created here later inherit the admin group.
 - name: Create webapp working directory
   become: true
   ansible.builtin.file:
     state: directory
-    mode: '0750'
+    mode: '2750'
     owner: webapp
-    group: webapp
+    group: admin
     path: '{{ webapp_working_directory }}'
 - name: Ensure rsyslog is installed (routes container logs to /var/log/docker)
   become: true
@@ -55,6 +56,10 @@
     owner: root
     group: root
     mode: '0644'
+# Contains the app-user database password, but must stay 0644: it is
+# bind-mounted into the database container and read by the container's
+# postgres user (uid 999), which matches this host file's "other" bits.
+# The 2750 parent directory is what keeps non-admin host users out.
 - name: Deploy database init SQL
   become: true
   notify: Reload_webapp
@@ -63,16 +68,18 @@
     dest: '{{ webapp_working_directory }}/01-init.sql'
     mode: '0644'
     owner: webapp
-    group: webapp
+    group: admin
+# 0640 + group admin: contains the rendered database passwords, which admins
+# may read (they are root-equivalent anyway) but no other account may.
 - name: Deploy docker-compose.yml
   become: true
   notify: Reload_webapp
   ansible.builtin.template:
     src: docker-compose.yml.j2
     dest: '{{ webapp_working_directory }}/docker-compose.yml'
-    mode: '0600'
+    mode: '0640'
     owner: webapp
-    group: webapp
+    group: admin
 - name: Deploy webapp systemd service
   become: true
   notify: Reload_webapp
@@ -111,8 +118,8 @@
         src: deploy-webapp.sh.j2
         dest: '{{ webapp_working_directory }}/deploy-webapp.sh'
         owner: webapp
-        group: webapp
-        mode: '0755'
+        group: admin
+        mode: '0750'
     - name: Deploy sudoers entry for deploy user - /etc/sudoers.d/deploy-webapp
       become: true
       ansible.builtin.template:

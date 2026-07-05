@@ -5,6 +5,11 @@
     name: '{{ item }}'
     state: present
   with_items: [admin, docker]
+# Group memberships beyond sudo, so day-to-day reading needs no sudo:
+#   adm             read /var/log (syslog, auth.log, ...)
+#   systemd-journal read the journal (journalctl)
+# Writes stay behind sudo on purpose: they land in auth.log, so changes
+# to the box remain attributable.
 - name: Create admin user accounts
   become: true
   ansible.builtin.user:
@@ -12,7 +17,7 @@
     shell: /bin/bash
     create_home: true
     append: true
-    groups: '{{ item.name }},admin,docker'
+    groups: '{{ item.name }},admin,docker,adm,systemd-journal'
   with_items: '{{ admin_user_accounts }}'
   loop_control:
     label: '{{ item.name }}'
