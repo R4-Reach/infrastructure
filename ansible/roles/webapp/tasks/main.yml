@@ -14,11 +14,14 @@
     state: present
     system: true
     create_home: false
+# 0750: the rendered files inside contain database passwords, and 01-init.sql
+# must itself stay world-readable (see its task below) — so the directory is
+# what keeps other host users out.
 - name: Create webapp working directory
   become: true
   ansible.builtin.file:
     state: directory
-    mode: '0755'
+    mode: '0750'
     owner: webapp
     group: webapp
     path: '{{ webapp_working_directory }}'
@@ -67,7 +70,7 @@
   ansible.builtin.template:
     src: docker-compose.yml.j2
     dest: '{{ webapp_working_directory }}/docker-compose.yml'
-    mode: '0644'
+    mode: '0600'
     owner: webapp
     group: webapp
 - name: Deploy webapp systemd service

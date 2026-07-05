@@ -5,7 +5,10 @@ services:
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_DB=postgres
-      - POSTGRES_HOST_AUTH_METHOD=trust
+      # Only takes effect when the data volume is first initialized (initdb
+      # bakes it into the cluster); changing it later requires an ALTER USER
+      # inside the running container, not just a redeploy.
+      - POSTGRES_PASSWORD={{ webapp_database_superuser_password }}
     volumes:
       - pgdata:/var/lib/postgresql
       - ./01-init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro

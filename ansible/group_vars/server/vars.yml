@@ -1,3 +1,7 @@
 ---
-# Secret provided by group_vars/server/vault.yml (vault_webapp_database_password).
 webapp_database_password: '{{ vault_webapp_database_password }}'
+
+# Postgres superuser password; only used by the database container itself
+# (set at initdb). Ansible connects as postgres over the container-local
+# unix socket, which needs no password.
+webapp_database_superuser_password: '{{ vault_webapp_database_superuser_password }}'
