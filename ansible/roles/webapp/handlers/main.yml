@@ -1,3 +1,4 @@
+---
 # Reconcile the running stack with the compose file instead of restarting the
 # systemd unit. `docker compose up -d` recreates only the services whose config
 # actually changed, leaving everything else (crucially, the database) running.
@@ -8,9 +9,8 @@
   become_user: webapp
   ansible.builtin.command:
     cmd: docker compose up -d
-    chdir: "{{ webapp_working_directory }}"
+    chdir: '{{ webapp_working_directory }}'
   changed_when: true
-
 - name: Restart_rsyslog
   become: true
   ansible.builtin.service:

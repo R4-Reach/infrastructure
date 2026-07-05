@@ -6,7 +6,6 @@
   become: true
   ansible.builtin.command: nginx -t
   changed_when: false
-
 - name: Reload_nginx
   become: true
   ansible.builtin.service:

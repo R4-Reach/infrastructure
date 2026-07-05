@@ -16,15 +16,10 @@
     owner: root
     group: root
     mode: '0644'
-- name: Apt update
-  become: true
-  when: docker_apt_repo.changed
-  ansible.builtin.apt:
-    update_cache: true
 - name: Install docker packages
   become: true
   ansible.builtin.apt:
-    update_cache: false
+    update_cache: '{{ docker_apt_repo.changed }}'
     name:
       - docker-ce
       - docker-ce-cli

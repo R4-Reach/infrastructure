@@ -1,0 +1,3 @@
+---
+# Secret provided by group_vars/server/vault.yml (vault_webapp_database_password).
+webapp_database_password: '{{ vault_webapp_database_password }}'

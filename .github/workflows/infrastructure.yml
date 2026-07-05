@@ -57,5 +57,5 @@ jobs:
           make diff SSH_USER=ansible
       - name: Ansible Apply
         if: github.ref == 'refs/heads/main'
-        run: |
-          make apply SSH_USER=ansible 
+        run: |-
+          make apply SSH_USER=ansible

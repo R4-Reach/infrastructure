@@ -6,9 +6,7 @@
     state: present
 - name: Deploy /etc/nginx/sites-enabled/default default nginx sites_enabled config
   become: true
-  notify:
-    - Validate_nginx
-    - Reload_nginx
+  notify: [Validate_nginx, Reload_nginx]
   ansible.builtin.template:
     src: sites-enabled-default.conf
     dest: /etc/nginx/sites-enabled/default
@@ -21,7 +19,6 @@
     name: nginx
     state: started
     enabled: true
-
 - name: Allow firewall ports
   become: true
   community.general.ufw:

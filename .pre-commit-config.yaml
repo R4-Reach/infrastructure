@@ -9,6 +9,9 @@ repos:
     hooks:
       - id: check-yaml
         args: [--allow-multiple-documents]
+        # Ansible vault files hold encrypted secrets and (whole-file encrypted)
+        # are not valid YAML; never parse or reformat them.
+        exclude: (^|/)vault\.yml$
       - id: end-of-file-fixer
       - id: trailing-whitespace
       - id: check-merge-conflict
@@ -20,6 +23,7 @@ repos:
     hooks:
       - id: yamlfix
         types_or: [yaml]
+        exclude: (^|/)vault\.yml$
   - repo: https://github.com/rhysd/actionlint
     rev: v1.7.7
     hooks:
